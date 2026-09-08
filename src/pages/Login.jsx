@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Login() {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
@@ -54,9 +56,12 @@ function Login() {
 
           <p className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{" "}
-            <span className="cursor-pointer font-medium text-blue-600">
-              Sign up
-            </span>
+            <Link
+              to="/signup"
+              className="font-medium text-blue-600 hover:underline"
+            >
+              Signup
+            </Link>
           </p>
         </div>
       </div>
@@ -101,3 +106,21 @@ export default Login;
 
 // max-w-md means:
 // But don't allow the form to become too wide.
+
+// -------------- Link vs useNavigate
+
+// Link: Use it when the user clicks something to navigate.
+// Example:
+{/* <Link to="/signup">
+  Sign up
+</Link> */}
+
+// useNavigate: Use it when our JavaScript logic needs to navigate.
+// For example, later after successful login:
+// const navigate = useNavigate();
+
+// const handleLogin = async () => {
+//   // login logic
+
+//   navigate("/dashboard");
+// };
