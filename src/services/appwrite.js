@@ -1,4 +1,4 @@
-import { Account, Client, TablesDB } from "appwrite";
+import { Account, Client, ID, TablesDB } from "appwrite";
 
 const client = new Client(); // create the new client that communicates with Appwrite
 
@@ -12,3 +12,20 @@ export const account = new Account(client);
 
 // creates the database service we'll eventually use for our tasks.
 export const tablesDB = new TablesDB(client);
+
+export const authService = {
+  async signup({ email, password, name }) {
+    return await account.create(ID.unique(), email, password, name);
+  },
+  async login({ email, password }) {
+    return await account.createEmailPasswordSession(email, password);
+  },
+
+  async logout() {
+    return await account.deleteSession("current");
+  },
+
+  async getCurrentUser() {
+    return await account.get();
+  },
+};
