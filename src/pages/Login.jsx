@@ -1,6 +1,43 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+import { authService } from "../services/appwrite";
 
 function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setLoading(true);
+
+    try {
+      await authService.login({
+        //authService.login() creates the Appwrite session:
+        email,
+        password,
+      });
+
+      // But our React AuthContext also needs to know who is logged in.so we do
+      const currentUser = await authService.getCurrentUser(); //Now our global state knows:user = current Appwrite user
+      setUser(currentUser);
+      navigate("/");
+    } catch (error) {
+      console.error("Login failed", error);
+      setError(error.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Left - Login Form */}
@@ -10,7 +47,7 @@ function Login() {
 
           <p className="mt-2 text-gray-600">Login to continue to TaskFlow</p>
 
-          <form className="mt-8 space-y-5">
+          <form className="mt-8 space-y-5" onSubmit={handleLogin}>
             {/* Email */}
             <div>
               <label
@@ -23,6 +60,8 @@ function Login() {
               <input
                 id="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
@@ -40,17 +79,22 @@ function Login() {
               <input
                 id="password"
                 type="password"
+                value={password}
                 placeholder="Enter your password"
+                onChange={(e) => setPassword(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
             </div>
 
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
             {/* Login Button */}
             <button
               type="submit"
+              disabled={loading}
               className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700"
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 
@@ -111,9 +155,11 @@ export default Login;
 
 // Link: Use it when the user clicks something to navigate.
 // Example:
-{/* <Link to="/signup">
+{
+  /* <Link to="/signup">
   Sign up
-</Link> */}
+</Link> */
+}
 
 // useNavigate: Use it when our JavaScript logic needs to navigate.
 // For example, later after successful login:
