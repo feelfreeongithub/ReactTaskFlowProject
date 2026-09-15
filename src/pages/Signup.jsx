@@ -1,19 +1,25 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { authService } from "../services/appwrite";
 
 function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      const user = await authService.signup({
+        name,
+        password,
+        email,
+      });
 
-    console.log({
-      name,
-      email,
-      password,
-    });
+      console.log("User created:", user);
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
   };
 
   return (
