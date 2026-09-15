@@ -1,6 +1,21 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 function Signup() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    console.log({
+      name,
+      email,
+      password,
+    });
+  };
+
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Left - Signup Form */}
@@ -12,7 +27,7 @@ function Signup() {
 
           <p className="mt-2 text-gray-600">Create your TaskFlow account</p>
 
-          <form className="mt-8 space-y-5">
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             {/* Name */}
             <div>
               <label
@@ -25,7 +40,9 @@ function Signup() {
               <input
                 id="name"
                 type="text"
+                value={name}
                 placeholder="Enter your name"
+                onChange={(e) => setName(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
             </div>
@@ -42,7 +59,9 @@ function Signup() {
               <input
                 id="email"
                 type="email"
+                value={email}
                 placeholder="Enter your email"
+                onChange={(e) => setEmail(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
             </div>
@@ -59,7 +78,9 @@ function Signup() {
               <input
                 id="password"
                 type="password"
+                value={password}
                 placeholder="Create a password"
+                onChange={(e) => setPassword(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
             </div>
