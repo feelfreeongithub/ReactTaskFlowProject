@@ -1,24 +1,45 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { authService } from "../services/appwrite";
+import { useAuth } from "../context/useAuth";
 
 function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setError("");
+    setLoading(true);
     try {
-      const user = await authService.signup({
+      await authService.signup({
         name,
         password,
         email,
       });
 
-      console.log("User created:", user);
+      await authService.login({
+        email,
+        password,
+      });
+
+      const currentUser = await authService.getCurrentUser();
+
+      setUser(currentUser);
+
+      navigate("/");
     } catch (error) {
       console.error("Signup failed:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,12 +112,15 @@ function Signup() {
               />
             </div>
 
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
             {/* Signup Button */}
             <button
               type="submit"
+              disabled={loading}
               className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700"
             >
-              Create Account
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </form>
 
