@@ -5,7 +5,6 @@ import { authService, taskService } from "../services/appwrite";
 import TaskCard from "../components/tasks/TaskCard";
 import TaskForm from "../components/tasks/TaskForm";
 
-
 function Dashboard() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
@@ -15,6 +14,16 @@ function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [error, setError] = useState("");
+  const [editingTask, setEditingTask] = useState(null);
+  const [filter, setFilter] = useState("all");
+
+  const filteredTasks = useMemo(() => {
+    if (filter === "all") {
+      return tasks;
+    }
+
+    return tasks.filter((task) => task.status === filter);
+  }, [tasks, filter]);
 
   const loadTasks = async () => {
     if (!user?.$id) return;
@@ -60,8 +69,45 @@ function Dashboard() {
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
+  const handleUpdateTask = async (taskData) => {
+    if (!editingTask) return;
+
     try {
+      setCreating(true);
+      setError("");
+
+      const updatedTask = await taskService.updateTask(
+        editingTask.$id,
+        taskData,
+      );
+
+      setTasks((previousTasks) =>
+        previousTasks.map((task) =>
+          task.$id === updatedTask.$id ? updatedTask : task,
+        ),
+      );
+
+      setEditingTask(null);
+    } catch (error) {
+      console.error("Failed to update task:", error);
+      setError("Unable to update the task. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this task?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+
       await taskService.deleteTask(taskId);
 
       setTasks((previousTasks) =>
@@ -169,6 +215,27 @@ function Dashboard() {
             <p className="mt-2 text-gray-500">
               Here's what's happening with your tasks today.
             </p>
+
+            <div className="mb-5 flex flex-wrap gap-2">
+              {[
+                { value: "all", label: "All" },
+                { value: "todo", label: "To Do" },
+                { value: "in-progress", label: "In Progress" },
+                { value: "completed", label: "Completed" },
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  onClick={() => setFilter(item.value)}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    filter === item.value
+                      ? "bg-indigo-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </section>
 
           {/* Error */}
@@ -239,20 +306,20 @@ function Dashboard() {
               <div className="rounded-xl border border-gray-200 bg-white px-6 py-14 text-center">
                 <p className="text-sm text-gray-500">Loading your tasks...</p>
               </div>
-            ) : tasks.length === 0 ? (
+            ) : filteredTasks?.length === 0 ? (
               /* Empty state */
               <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-2xl text-indigo-600">
                   ✓
                 </div>
-
                 <h4 className="mt-4 text-base font-semibold text-gray-900">
-                  No tasks yet
+                  {filter === "all" ? "No tasks yet" : "No matching tasks"}
                 </h4>
 
                 <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
-                  Create your first task and start organizing your work with
-                  TaskFlow.
+                  {filter === "all"
+                    ? "Create your first task and start organizing your work with TaskFlow."
+                    : "There are no tasks in this status yet."}
                 </p>
 
                 <button
@@ -265,11 +332,12 @@ function Dashboard() {
             ) : (
               /* Task list */
               <div className="grid gap-4 lg:grid-cols-2">
-                {tasks.map((task) => (
+                {filteredTasks.map((task) => (
                   <TaskCard
                     key={task.$id}
                     task={task}
                     onDelete={handleDeleteTask}
+                    onEdit={(task) => setEditingTask(task)}
                   />
                 ))}
               </div>
@@ -279,22 +347,28 @@ function Dashboard() {
       </main>
 
       {/* Create Task Modal */}
-      {showTaskForm && (
+      {(showTaskForm || editingTask) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-900">
-                Create a new task
+                {editingTask ? "Edit task" : "Create a new task"}
               </h3>
 
               <p className="mt-1 text-sm text-gray-500">
-                Add the details of your task below.
+                {editingTask
+                  ? "Update the details of your task."
+                  : "Add the details of your task below."}
               </p>
             </div>
 
             <TaskForm
-              onSubmit={handleCreateTask}
-              onCancel={() => setShowTaskForm(false)}
+              initialTask={editingTask}
+              onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+              onCancel={() => {
+                setShowTaskForm(false);
+                setEditingTask(null);
+              }}
               loading={creating}
             />
           </div>

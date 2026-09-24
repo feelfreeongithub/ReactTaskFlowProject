@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-function TaskForm({ onSubmit, onCancel, loading }) {
+function TaskForm({ onSubmit, onCancel, loading, initialTask = null }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
+
+  useEffect(() => {
+    if (initialTask) {
+      setTitle(initialTask.title || "");
+      setDescription(initialTask.description || "");
+      setStatus(initialTask.status || "todo");
+    } else {
+      setTitle("");
+      setDescription("");
+      setStatus("todo");
+    }
+  }, [initialTask]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,11 +29,9 @@ function TaskForm({ onSubmit, onCancel, loading }) {
       description: description.trim(),
       status,
     });
-
-    setTitle("");
-    setDescription("");
-    setStatus("todo");
   };
+
+  const isEditing = Boolean(initialTask);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -73,7 +83,7 @@ function TaskForm({ onSubmit, onCancel, loading }) {
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 cursor-pointer"
+          className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
         >
           Cancel
         </button>
@@ -81,9 +91,15 @@ function TaskForm({ onSubmit, onCancel, loading }) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+          className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Creating..." : "Create Task"}
+          {loading
+            ? isEditing
+              ? "Saving..."
+              : "Creating..."
+            : isEditing
+              ? "Save Changes"
+              : "Create Task"}
         </button>
       </div>
     </form>
