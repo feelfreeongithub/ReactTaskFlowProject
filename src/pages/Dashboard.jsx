@@ -18,9 +18,7 @@ function Dashboard() {
   const [filter, setFilter] = useState("all");
 
   const filteredTasks = useMemo(() => {
-    if (filter === "all") {
-      return tasks;
-    }
+    if (filter === "all") return tasks;
 
     return tasks.filter((task) => task.status === filter);
   }, [tasks, filter]);
@@ -33,11 +31,10 @@ function Dashboard() {
       setError("");
 
       const response = await taskService.getTasks(user.$id);
-
       setTasks(response.rows);
-    } catch (error) {
-      console.error("Failed to load tasks:", error);
-      setError("Unable to load your tasks. Please try again.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load tasks.");
     } finally {
       setLoading(false);
     }
@@ -48,8 +45,6 @@ function Dashboard() {
   }, [user?.$id]);
 
   const handleCreateTask = async (taskData) => {
-    if (!user?.$id) return;
-
     try {
       setCreating(true);
       setError("");
@@ -59,19 +54,17 @@ function Dashboard() {
         userId: user.$id,
       });
 
-      setTasks((previousTasks) => [newTask, ...previousTasks]);
+      setTasks((prev) => [newTask, ...prev]);
       setShowTaskForm(false);
-    } catch (error) {
-      console.error("Failed to create task:", error);
-      setError("Unable to create the task. Please try again.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to create task.");
     } finally {
       setCreating(false);
     }
   };
 
   const handleUpdateTask = async (taskData) => {
-    if (!editingTask) return;
-
     try {
       setCreating(true);
       setError("");
@@ -81,16 +74,14 @@ function Dashboard() {
         taskData,
       );
 
-      setTasks((previousTasks) =>
-        previousTasks.map((task) =>
-          task.$id === updatedTask.$id ? updatedTask : task,
-        ),
+      setTasks((prev) =>
+        prev.map((task) => (task.$id === editingTask.$id ? updatedTask : task)),
       );
 
       setEditingTask(null);
-    } catch (error) {
-      console.error("Failed to update task:", error);
-      setError("Unable to update the task. Please try again.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update task.");
     } finally {
       setCreating(false);
     }
@@ -101,121 +92,264 @@ function Dashboard() {
       "Are you sure you want to delete this task?",
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setError("");
 
       await taskService.deleteTask(taskId);
 
-      setTasks((previousTasks) =>
-        previousTasks.filter((task) => task.$id !== taskId),
-      );
-    } catch (error) {
-      console.error("Failed to delete task:", error);
-      setError("Unable to delete the task. Please try again.");
+      setTasks((prev) => prev.filter((task) => task.$id !== taskId));
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete task.");
     }
   };
 
-  const stats = useMemo(() => {
-    return {
-      total: tasks.length,
-      inProgress: tasks.filter((task) => task.status === "in-progress").length,
-      completed: tasks.filter((task) => task.status === "completed").length,
-    };
-  }, [tasks]);
+  const stats = {
+    total: tasks.length,
+    inProgress: tasks.filter((task) => task.status === "in-progress").length,
+    completed: tasks.filter((task) => task.status === "completed").length,
+  };
 
   const handleLogout = async () => {
     try {
       await authService.logout();
       setUser(null);
       navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      {/* Desktop Sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white md:flex md:flex-col">
-        <div className="border-b border-gray-100 px-6 py-5">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Task<span className="text-indigo-600">Flow</span>
-          </h1>
-
-          <p className="mt-1 text-xs text-gray-500">Manage your work simply</p>
+        <div className="flex h-16 items-center border-b border-gray-100 px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white">
+              T
+            </div>
+            <span className="text-lg font-bold">TaskFlow</span>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-2 p-4">
-          <button className="flex w-full items-center gap-3 rounded-lg bg-indigo-50 px-4 py-3 text-left text-sm font-medium text-indigo-700">
-            <span>▦</span>
+          <div className="flex items-center gap-3 rounded-lg bg-indigo-50 px-4 py-3 text-sm font-medium text-indigo-700">
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
             Dashboard
-          </button>
+          </div>
 
-          <button className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-600 transition hover:bg-gray-50">
-            <span>✓</span>
+          <div className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-500">
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
             My Tasks
-          </button>
-
-          <button className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-600 transition hover:bg-gray-50">
-            <span>⚙</span>
-            Settings
-          </button>
+          </div>
         </nav>
 
         <div className="border-t border-gray-100 p-4">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-gray-500 transition hover:bg-red-50 hover:text-red-600"
           >
-            <span>↪</span>
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M10 17l5-5-5-5" />
+              <path d="M15 12H3" />
+              <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
+            </svg>
             Logout
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="md:ml-64">
-        {/* Top bar */}
-        <header className="border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between px-5 py-4 sm:px-8">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
-
-              <p className="text-sm text-gray-500">Overview of your tasks</p>
+      {/* Main */}
+      <div className="md:pl-64">
+        {/* Mobile Header */}
+        <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur md:hidden">
+          <div className="flex h-16 items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+                T
+              </div>
+              <span className="font-bold">TaskFlow</span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.name}
-                </p>
+            <button
+              onClick={handleLogout}
+              className="rounded-lg p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
+              aria-label="Logout"
+            >
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M10 17l5-5-5-5" />
+                <path d="M15 12H3" />
+                <path d="M21 19V5a2 2 0 0 0-2-2h-5" />
+              </svg>
+            </button>
+          </div>
+        </header>
 
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+        {/* Top Bar */}
+        <header className="hidden h-16 items-center justify-end border-b border-gray-200 bg-white px-8 md:flex">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
+              {user?.name?.charAt(0)?.toUpperCase() ||
+                user?.email?.charAt(0)?.toUpperCase()}
+            </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 font-semibold text-indigo-700">
-                {user?.name?.charAt(0)?.toUpperCase() || "U"}
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {user?.name || "User"}
+              </p>
+              <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
           </div>
         </header>
 
-        {/* Dashboard body */}
-        <div className="px-5 py-8 sm:px-8">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {/* Welcome */}
           <section className="mb-8">
-            <h3 className="text-2xl font-bold tracking-tight text-gray-900">
-              Welcome back, {user?.name} 👋
-            </h3>
+            <p className="text-sm font-medium text-indigo-600">Welcome back</p>
 
-            <p className="mt-2 text-gray-500">
-              Here's what's happening with your tasks today.
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              {user?.name ? `Hello, ${user.name}` : "Your Dashboard"}
+            </h1>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Manage your tasks and keep your work organized.
             </p>
+          </section>
 
+          {/* Error */}
+          {error && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          {/* Stats */}
+          <section className="mb-8 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Tasks</p>
+                  <p className="mt-2 text-2xl font-bold">{stats.total}</p>
+                </div>
+
+                <div className="rounded-lg bg-indigo-50 p-3 text-indigo-600">
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M8 6h13M8 12h13M8 18h13" />
+                    <path d="M3 6h.01M3 12h.01M3 18h.01" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">In Progress</p>
+                  <p className="mt-2 text-2xl font-bold">{stats.inProgress}</p>
+                </div>
+
+                <div className="rounded-lg bg-blue-50 p-3 text-blue-600">
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="mt-2 text-2xl font-bold">{stats.completed}</p>
+                </div>
+
+                <div className="rounded-lg bg-green-50 p-3 text-green-600">
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Tasks Header */}
+          <section>
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  My Tasks
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Keep track of your work.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setEditingTask(null);
+                  setShowTaskForm(true);
+                }}
+                className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                + Add Task
+              </button>
+            </div>
+
+            {/* Filters */}
             <div className="mb-5 flex flex-wrap gap-2">
               {[
                 { value: "all", label: "All" },
@@ -226,150 +360,120 @@ function Dashboard() {
                 <button
                   key={item.value}
                   onClick={() => setFilter(item.value)}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     filter === item.value
                       ? "bg-indigo-600 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
+                      : "bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50"
                   }`}
                 >
                   {item.label}
                 </button>
               ))}
             </div>
-          </section>
-
-          {/* Error */}
-          {error && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Stats */}
-          <section className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">Total Tasks</p>
-
-              <p className="mt-3 text-3xl font-bold text-gray-900">
-                {stats.total}
-              </p>
-
-              <p className="mt-2 text-xs text-gray-400">All your tasks</p>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">In Progress</p>
-
-              <p className="mt-3 text-3xl font-bold text-indigo-600">
-                {stats.inProgress}
-              </p>
-
-              <p className="mt-2 text-xs text-gray-400">
-                Tasks you're working on
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">Completed</p>
-
-              <p className="mt-3 text-3xl font-bold text-green-600">
-                {stats.completed}
-              </p>
-
-              <p className="mt-2 text-xs text-gray-400">Finished tasks</p>
-            </div>
-          </section>
-
-          {/* Tasks */}
-          <section className="mt-8">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  My Tasks
-                </h3>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Keep track of your current work.
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowTaskForm(true)}
-                className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
-              >
-                + Add Task
-              </button>
-            </div>
 
             {/* Loading */}
             {loading ? (
-              <div className="rounded-xl border border-gray-200 bg-white px-6 py-14 text-center">
-                <p className="text-sm text-gray-500">Loading your tasks...</p>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="animate-pulse rounded-xl border border-gray-200 bg-white p-5"
+                  >
+                    <div className="h-5 w-2/3 rounded bg-gray-200" />
+                    <div className="mt-3 h-4 w-full rounded bg-gray-100" />
+                    <div className="mt-2 h-4 w-1/2 rounded bg-gray-100" />
+                    <div className="mt-6 h-4 w-1/3 rounded bg-gray-100" />
+                  </div>
+                ))}
               </div>
-            ) : filteredTasks?.length === 0 ? (
-              /* Empty state */
-              <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-2xl text-indigo-600">
-                  ✓
+            ) : filteredTasks.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                  <svg
+                    className="h-6 w-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
                 </div>
-                <h4 className="mt-4 text-base font-semibold text-gray-900">
-                  {filter === "all" ? "No tasks yet" : "No matching tasks"}
-                </h4>
 
-                <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
-                  {filter === "all"
-                    ? "Create your first task and start organizing your work with TaskFlow."
-                    : "There are no tasks in this status yet."}
+                <h3 className="mt-4 font-semibold text-gray-900">
+                  No tasks found
+                </h3>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Create a task to start organizing your work.
                 </p>
-
-                <button
-                  onClick={() => setShowTaskForm(true)}
-                  className="mt-5 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
-                >
-                  Create your first task
-                </button>
               </div>
             ) : (
-              /* Task list */
               <div className="grid gap-4 lg:grid-cols-2">
                 {filteredTasks.map((task) => (
                   <TaskCard
                     key={task.$id}
                     task={task}
+                    onEdit={(task) => {
+                      setShowTaskForm(false);
+                      setEditingTask(task);
+                    }}
                     onDelete={handleDeleteTask}
-                    onEdit={(task) => setEditingTask(task)}
                   />
                 ))}
               </div>
             )}
           </section>
-        </div>
-      </main>
+        </main>
+      </div>
 
-      {/* Create Task Modal */}
+      {/* Task Modal */}
       {(showTaskForm || editingTask) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">
-                {editingTask ? "Edit task" : "Create a new task"}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {editingTask ? "Edit Task" : "Create Task"}
+                </h3>
 
-              <p className="mt-1 text-sm text-gray-500">
-                {editingTask
-                  ? "Update the details of your task."
-                  : "Add the details of your task below."}
-              </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {editingTask
+                    ? "Update the details of your task."
+                    : "Add a new task to your workspace."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTaskForm(false);
+                  setEditingTask(null);
+                }}
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
             </div>
 
             <TaskForm
-              initialTask={editingTask}
               onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
               onCancel={() => {
                 setShowTaskForm(false);
                 setEditingTask(null);
               }}
               loading={creating}
+              initialTask={editingTask}
             />
           </div>
         </div>
